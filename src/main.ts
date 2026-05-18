@@ -79,7 +79,7 @@ const MAIN_ITEMS: MainItemConfig[] = [
   },
   {
     key: 'tm-translate',
-    label: 'TM翻訳用',
+    label: 'TM作成',
     unit: 'ワード',
     subItems: [
       { key: 'word-file', label: 'Wordファイル', defaultPrice: 0.7, type: 'per-unit' },
@@ -92,7 +92,7 @@ const MAIN_ITEMS: MainItemConfig[] = [
   },
   {
     key: 'tm-maru',
-    label: 'TM三丸用',
+    label: 'メモリ作成',
     unit: 'ワード',
     subItems: [
       { key: 'word-file', label: 'Wordファイル', defaultPrice: 1.0, type: 'per-unit' },

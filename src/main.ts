@@ -399,14 +399,14 @@ function showOutputModal(text: string): void {
     <div class="output-panel">
       <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200">
         <h3 class="text-base font-semibold text-slate-700">見積りテキスト</h3>
-        <button data-action="copy-output"
+        <button id="btn-copy"
           class="text-sm font-medium text-blue-600 hover:text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors">
           コピー
         </button>
       </div>
       <div class="output-content" id="output-text">${escapeHtml(text)}</div>
       <div class="px-6 py-4 border-t border-slate-100">
-        <button data-action="close-output"
+        <button id="btn-close"
           class="w-full py-2.5 rounded-xl bg-slate-100 text-slate-600 font-medium hover:bg-slate-200 transition-colors">
           閉じる
         </button>
@@ -415,8 +415,30 @@ function showOutputModal(text: string): void {
   `;
   document.body.appendChild(overlay);
 
-  // Store text for copy
-  overlay.setAttribute('data-output-text', text);
+  // Bind close button
+  overlay.querySelector('#btn-close')!.addEventListener('click', () => {
+    overlay.remove();
+  });
+
+  // Bind copy button
+  overlay.querySelector('#btn-copy')!.addEventListener('click', () => {
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = overlay.querySelector('#btn-copy')!;
+      btn.textContent = 'コピーしました！';
+      btn.classList.add('text-green-600');
+      setTimeout(() => {
+        btn.textContent = 'コピー';
+        btn.classList.remove('text-green-600');
+      }, 1500);
+    });
+  });
+
+  // Close on clicking overlay background
+  overlay.addEventListener('click', (e: MouseEvent) => {
+    if (e.target === overlay) {
+      overlay.remove();
+    }
+  });
 }
 
 function escapeHtml(text: string): string {

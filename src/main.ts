@@ -25,6 +25,7 @@ interface MainItemState {
 }
 
 interface AppState {
+  customerName: string;
   mainItems: Record<string, MainItemState>;
   activeInputKey: string | null; // tracks which page input is focused for the keyboard
 }
@@ -88,7 +89,7 @@ function createInitialState(): AppState {
     }
     mainItems[main.key] = { selected: false, subItems };
   }
-  return { mainItems, activeInputKey: null };
+  return { customerName: '', mainItems, activeInputKey: null };
 }
 
 const state: AppState = createInitialState();
@@ -151,6 +152,14 @@ function renderMainContent(): void {
       <div class="text-center mb-8">
         <h1 class="text-2xl font-bold text-slate-800 tracking-tight">お見積り作成</h1>
         <p class="text-sm text-slate-500 mt-1">項目を選択して見積りを作成します</p>
+      </div>
+
+      <!-- Customer Name -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
+        <label class="block text-base font-semibold text-slate-700 mb-3">顧客名</label>
+        <input type="text" id="customer-name" data-action="change-customer-name"
+          class="w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-base text-slate-800 outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          placeholder="顧客名を入力してください" value="${escapeHtml(state.customerName)}" />
       </div>
 
       <!-- Main Items Selection -->
@@ -355,7 +364,7 @@ function render(): void {
 function generateOutputText(): string {
   const lines: string[] = [];
 
-  lines.push('様');
+  lines.push(`${state.customerName}様`);
   lines.push('　いつもお世話になっております。');
   lines.push('お見積りします。');
   lines.push('');
@@ -570,17 +579,24 @@ function setupEvents(): void {
     }
   });
 
-  // Handle price input changes
+  // Handle input changes (customer name + price)
   app.addEventListener('input', (e: Event) => {
     const target = e.target as HTMLElement;
-    if (!target.hasAttribute('data-action') || target.getAttribute('data-action') !== 'change-price') return;
+    const action = target.getAttribute('data-action');
 
-    const mainKey = target.getAttribute('data-main')!;
-    const subKey = target.getAttribute('data-sub')!;
-    const value = (target as HTMLInputElement).value;
-    const numValue = parseInt(value, 10);
-    if (!isNaN(numValue) && numValue >= 0) {
-      state.mainItems[mainKey].subItems[subKey].price = numValue;
+    if (action === 'change-customer-name') {
+      state.customerName = (target as HTMLInputElement).value;
+      return;
+    }
+
+    if (action === 'change-price') {
+      const mainKey = target.getAttribute('data-main')!;
+      const subKey = target.getAttribute('data-sub')!;
+      const value = (target as HTMLInputElement).value;
+      const numValue = parseInt(value, 10);
+      if (!isNaN(numValue) && numValue >= 0) {
+        state.mainItems[mainKey].subItems[subKey].price = numValue;
+      }
     }
   });
 

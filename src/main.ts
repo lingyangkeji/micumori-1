@@ -5,18 +5,21 @@ interface SubItemConfig {
   key: string;
   label: string;
   defaultPrice: number;
+  type: 'per-unit' | 'lump-sum'; // per-unit: 単価×数量, lump-sum: 一式金額
 }
 
 interface MainItemConfig {
   key: string;
   label: string;
+  unit: string; // '頁' or 'ワード'
   subItems: SubItemConfig[];
 }
 
 interface SubItemState {
   selected: boolean;
   price: number;
-  pages: number;
+  quantity: number; // quantity (頁 or ワード) for per-unit type
+  lumpSum: number; // total amount for lump-sum type
 }
 
 interface MainItemState {
@@ -27,7 +30,7 @@ interface MainItemState {
 interface AppState {
   customerName: string;
   mainItems: Record<string, MainItemState>;
-  activeInputKey: string | null; // tracks which page input is focused for the keyboard
+  activeInputKey: string | null; // tracks which input is focused for the keyboard
 }
 
 // ─── Constants ───────────────────────────────────────────────────────
@@ -35,40 +38,69 @@ const MAIN_ITEMS: MainItemConfig[] = [
   {
     key: 'word',
     label: 'Word化',
+    unit: '頁',
     subItems: [
-      { key: 'input', label: '入力必要', defaultPrice: 480 },
-      { key: 'selectable', label: '文字選択可', defaultPrice: 280 },
-      { key: 'link', label: 'リンク作成', defaultPrice: 100 },
-      { key: 'preprocess', label: '前処理', defaultPrice: 100 },
-      { key: 'layout', label: '翻訳後レイアウト調整', defaultPrice: 280 },
-      { key: 'beta', label: 'ベタ打ち', defaultPrice: 680 },
-      { key: 'ocr', label: '画像のテクスト化', defaultPrice: 480 },
+      { key: 'input', label: '入力必要', defaultPrice: 480, type: 'per-unit' },
+      { key: 'selectable', label: '文字選択可', defaultPrice: 280, type: 'per-unit' },
+      { key: 'link', label: 'リンク作成', defaultPrice: 100, type: 'per-unit' },
+      { key: 'preprocess', label: '前処理', defaultPrice: 100, type: 'per-unit' },
+      { key: 'layout', label: '翻訳後レイアウト調整', defaultPrice: 280, type: 'per-unit' },
+      { key: 'beta', label: 'ベタ打ち', defaultPrice: 680, type: 'per-unit' },
+      { key: 'ocr', label: '画像のテクスト化', defaultPrice: 480, type: 'per-unit' },
     ],
   },
   {
     key: 'ppt',
     label: 'PPT化',
+    unit: '頁',
     subItems: [
-      { key: 'input', label: '入力必要', defaultPrice: 480 },
-      { key: 'selectable', label: '文字選択可', defaultPrice: 280 },
-      { key: 'link', label: 'リンク作成', defaultPrice: 100 },
-      { key: 'preprocess', label: '前処理', defaultPrice: 100 },
-      { key: 'layout', label: '翻訳後レイアウト調整', defaultPrice: 280 },
-      { key: 'beta', label: 'ベタ打ち', defaultPrice: 680 },
-      { key: 'ocr', label: '画像のテクスト化', defaultPrice: 480 },
+      { key: 'input', label: '入力必要', defaultPrice: 480, type: 'per-unit' },
+      { key: 'selectable', label: '文字選択可', defaultPrice: 280, type: 'per-unit' },
+      { key: 'link', label: 'リンク作成', defaultPrice: 100, type: 'per-unit' },
+      { key: 'preprocess', label: '前処理', defaultPrice: 100, type: 'per-unit' },
+      { key: 'layout', label: '翻訳後レイアウト調整', defaultPrice: 280, type: 'per-unit' },
+      { key: 'beta', label: 'ベタ打ち', defaultPrice: 680, type: 'per-unit' },
+      { key: 'ocr', label: '画像のテクスト化', defaultPrice: 480, type: 'per-unit' },
     ],
   },
   {
     key: 'excel',
     label: 'Excell化',
+    unit: '頁',
     subItems: [
-      { key: 'input', label: '入力必要', defaultPrice: 480 },
-      { key: 'selectable', label: '文字選択可', defaultPrice: 280 },
-      { key: 'link', label: 'リンク作成', defaultPrice: 100 },
-      { key: 'preprocess', label: '前処理', defaultPrice: 100 },
-      { key: 'layout', label: '翻訳後レイアウト調整', defaultPrice: 280 },
-      { key: 'beta', label: 'ベタ打ち', defaultPrice: 680 },
-      { key: 'ocr', label: '画像のテクスト化', defaultPrice: 480 },
+      { key: 'input', label: '入力必要', defaultPrice: 480, type: 'per-unit' },
+      { key: 'selectable', label: '文字選択可', defaultPrice: 280, type: 'per-unit' },
+      { key: 'link', label: 'リンク作成', defaultPrice: 100, type: 'per-unit' },
+      { key: 'preprocess', label: '前処理', defaultPrice: 100, type: 'per-unit' },
+      { key: 'layout', label: '翻訳後レイアウト調整', defaultPrice: 280, type: 'per-unit' },
+      { key: 'beta', label: 'ベタ打ち', defaultPrice: 680, type: 'per-unit' },
+      { key: 'ocr', label: '画像のテクスト化', defaultPrice: 480, type: 'per-unit' },
+    ],
+  },
+  {
+    key: 'tm-translate',
+    label: 'TM翻訳用',
+    unit: 'ワード',
+    subItems: [
+      { key: 'word-file', label: 'Wordファイル', defaultPrice: 0.7, type: 'per-unit' },
+      { key: 'ppt-file', label: 'PPTファイル', defaultPrice: 0.8, type: 'per-unit' },
+      { key: 'excel-file', label: 'Excellファイル', defaultPrice: 0.8, type: 'per-unit' },
+      { key: 'pdf-file', label: 'PDFファイル', defaultPrice: 0.9, type: 'per-unit' },
+      { key: 'pdf-col', label: 'PDF段組みファイル', defaultPrice: 1.5, type: 'per-unit' },
+      { key: 'image', label: '画像の部分', defaultPrice: 0, type: 'lump-sum' },
+    ],
+  },
+  {
+    key: 'tm-maru',
+    label: 'TM三丸用',
+    unit: 'ワード',
+    subItems: [
+      { key: 'word-file', label: 'Wordファイル', defaultPrice: 1.0, type: 'per-unit' },
+      { key: 'ppt-file', label: 'PPTファイル', defaultPrice: 1.5, type: 'per-unit' },
+      { key: 'excel-file', label: 'Excellファイル', defaultPrice: 1.5, type: 'per-unit' },
+      { key: 'pdf-file', label: 'PDFファイル', defaultPrice: 1.5, type: 'per-unit' },
+      { key: 'pdf-col', label: 'PDF段組み等', defaultPrice: 0.0, type: 'per-unit' },
+      { key: 'image', label: '画像の部分', defaultPrice: 0, type: 'lump-sum' },
     ],
   },
 ];
@@ -84,7 +116,8 @@ function createInitialState(): AppState {
       subItems[sub.key] = {
         selected: false,
         price: sub.defaultPrice,
-        pages: 0,
+        quantity: 0,
+        lumpSum: 0,
       };
     }
     mainItems[main.key] = { selected: false, subItems };
@@ -99,6 +132,12 @@ function formatPrice(price: number): string {
   return price.toLocaleString('ja-JP') + '円';
 }
 
+function formatPriceValue(price: number): string {
+  // Show decimal prices like 0.7 as-is; show integer prices without decimals
+  if (Number.isInteger(price)) return String(price);
+  return String(price);
+}
+
 function getMainConfig(key: string): MainItemConfig {
   return MAIN_ITEMS.find((m) => m.key === key)!;
 }
@@ -107,8 +146,13 @@ function getSubConfig(mainKey: string, subKey: string): SubItemConfig {
   return getMainConfig(mainKey).subItems.find((s) => s.key === subKey)!;
 }
 
-function calcSubtotal(price: number, pages: number): number {
-  return price * pages;
+function calcSubtotal(mainKey: string, subKey: string): number {
+  const ss = state.mainItems[mainKey].subItems[subKey];
+  const subConfig = getSubConfig(mainKey, subKey);
+  if (subConfig.type === 'lump-sum') {
+    return ss.lumpSum;
+  }
+  return ss.price * ss.quantity;
 }
 
 function calcTotal(): number {
@@ -118,8 +162,8 @@ function calcTotal(): number {
     if (!ms.selected) continue;
     for (const sub of main.subItems) {
       const ss = ms.subItems[sub.key];
-      if (ss.selected && ss.pages > 0) {
-        total += calcSubtotal(ss.price, ss.pages);
+      if (ss.selected) {
+        total += calcSubtotal(main.key, sub.key);
       }
     }
   }
@@ -138,6 +182,70 @@ function hasAnySelection(): boolean {
 }
 
 // ─── Render ──────────────────────────────────────────────────────────
+function renderSubItem(main: MainItemConfig, sub: SubItemConfig): string {
+  const ms = state.mainItems[main.key];
+  const ss = ms.subItems[sub.key];
+  const isActive = state.activeInputKey === `${main.key}:${sub.key}`;
+
+  if (sub.type === 'lump-sum') {
+    // 一式金額 type: only a lump sum input
+    const subtotal = ss.selected && ss.lumpSum > 0 ? ss.lumpSum : 0;
+    return `
+      <div class="sub-card rounded-xl border transition-all
+        ${isActive ? 'border-amber-300 ring-2 ring-amber-100 bg-amber-50/50' : ss.selected ? 'border-blue-200 bg-blue-50/50' : 'border-slate-100 bg-slate-50/50'}">
+        <div class="flex items-center gap-3 px-4 py-3">
+          <input type="checkbox" class="custom-check" data-action="toggle-sub" data-main="${main.key}" data-sub="${sub.key}"
+            ${ss.selected ? 'checked' : ''} />
+          <span class="text-sm font-medium text-slate-700 min-w-[160px]">${sub.label}</span>
+          <div class="flex items-center gap-1.5 ml-auto">
+            <span class="text-xs text-slate-400 mr-1">一式金額</span>
+            <input type="text" class="page-input" readonly
+              data-action="open-keyboard" data-main="${main.key}" data-sub="${sub.key}" data-input-type="lump-sum"
+              value="${ss.lumpSum > 0 ? ss.lumpSum : ''}"
+              placeholder="0" ${ss.selected ? '' : 'disabled'} />
+            <span class="text-xs text-slate-400">円</span>
+            <span class="text-slate-300 mx-1">＝</span>
+            <span class="text-sm font-semibold min-w-[80px] text-right
+              ${subtotal > 0 ? 'text-blue-600' : 'text-slate-300'}">
+              ${subtotal > 0 ? formatPrice(subtotal) : '−'}
+            </span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // per-unit type: 単価 × 数量
+  const subtotal = ss.selected && ss.quantity > 0 ? calcSubtotal(main.key, sub.key) : 0;
+  return `
+    <div class="sub-card rounded-xl border transition-all
+      ${isActive ? 'border-amber-300 ring-2 ring-amber-100 bg-amber-50/50' : ss.selected ? 'border-blue-200 bg-blue-50/50' : 'border-slate-100 bg-slate-50/50'}">
+      <div class="flex items-center gap-3 px-4 py-3">
+        <input type="checkbox" class="custom-check" data-action="toggle-sub" data-main="${main.key}" data-sub="${sub.key}"
+          ${ss.selected ? 'checked' : ''} />
+        <span class="text-sm font-medium text-slate-700 min-w-[160px]">${sub.label}</span>
+        <div class="flex items-center gap-1.5 ml-auto">
+          <input type="number" class="price-input" data-action="change-price"
+            data-main="${main.key}" data-sub="${sub.key}"
+            value="${formatPriceValue(ss.price)}" min="0" step="0.1" ${ss.selected ? '' : 'disabled'} />
+          <span class="text-xs text-slate-400">円</span>
+          <span class="text-slate-300 mx-1">×</span>
+          <input type="text" class="page-input" readonly
+            data-action="open-keyboard" data-main="${main.key}" data-sub="${sub.key}" data-input-type="quantity"
+            value="${ss.quantity > 0 ? ss.quantity : ''}"
+            placeholder="0" ${ss.selected ? '' : 'disabled'} />
+          <span class="text-xs text-slate-400">${main.unit}</span>
+          <span class="text-slate-300 mx-1">＝</span>
+          <span class="text-sm font-semibold min-w-[80px] text-right
+            ${subtotal > 0 ? 'text-blue-600' : 'text-slate-300'}">
+            ${subtotal > 0 ? formatPrice(subtotal) : '−'}
+          </span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function renderMainContent(): void {
   const app = document.getElementById('app');
   if (!app) return;
@@ -181,46 +289,15 @@ function renderMainContent(): void {
 
       <!-- Sub Items per Main Item -->
       ${MAIN_ITEMS.filter((main) => state.mainItems[main.key].selected).map((main) => {
-        const ms = state.mainItems[main.key];
         return `
           <div class="main-card bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-4">
             <h3 class="text-base font-semibold text-slate-700 mb-4 flex items-center gap-2">
               <span class="w-2 h-2 rounded-full bg-blue-500"></span>
               ${main.label}
+              <span class="text-xs font-normal text-slate-400 ml-1">（単位：${main.unit}）</span>
             </h3>
             <div class="space-y-3">
-              ${main.subItems.map((sub) => {
-                const ss = ms.subItems[sub.key];
-                const subtotal = ss.selected && ss.pages > 0 ? calcSubtotal(ss.price, ss.pages) : 0;
-                const isActive = state.activeInputKey === `${main.key}:${sub.key}`;
-                return `
-                  <div class="sub-card rounded-xl border transition-all
-                    ${isActive ? 'border-amber-300 ring-2 ring-amber-100 bg-amber-50/50' : ss.selected ? 'border-blue-200 bg-blue-50/50' : 'border-slate-100 bg-slate-50/50'}">
-                    <div class="flex items-center gap-3 px-4 py-3">
-                      <input type="checkbox" class="custom-check" data-action="toggle-sub" data-main="${main.key}" data-sub="${sub.key}"
-                        ${ss.selected ? 'checked' : ''} />
-                      <span class="text-sm font-medium text-slate-700 min-w-[130px]">${sub.label}</span>
-                      <div class="flex items-center gap-1.5 ml-auto">
-                        <input type="number" class="price-input" data-action="change-price"
-                          data-main="${main.key}" data-sub="${sub.key}"
-                          value="${ss.price}" min="0" ${ss.selected ? '' : 'disabled'} />
-                        <span class="text-xs text-slate-400">円</span>
-                        <span class="text-slate-300 mx-1">×</span>
-                        <input type="text" class="page-input" readonly
-                          data-action="open-keyboard" data-main="${main.key}" data-sub="${sub.key}"
-                          value="${ss.pages > 0 ? ss.pages : ''}"
-                          placeholder="0" ${ss.selected ? '' : 'disabled'} />
-                        <span class="text-xs text-slate-400">頁</span>
-                        <span class="text-slate-300 mx-1">＝</span>
-                        <span class="text-sm font-semibold min-w-[80px] text-right
-                          ${subtotal > 0 ? 'text-blue-600' : 'text-slate-300'}">
-                          ${subtotal > 0 ? formatPrice(subtotal) : '−'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                `;
-              }).join('')}
+              ${main.subItems.map((sub) => renderSubItem(main, sub)).join('')}
             </div>
           </div>
         `;
@@ -268,16 +345,25 @@ function renderKeyboard(): void {
   }
 
   const [activeMain, activeSub] = state.activeInputKey.split(':');
-  const activePages = state.mainItems[activeMain]?.subItems[activeSub]?.pages ?? 0;
+  const mainConfig = getMainConfig(activeMain);
+  const subConfig = getSubConfig(activeMain, activeSub);
+  const ss = state.mainItems[activeMain]?.subItems[activeSub];
+
+  const isLumpSum = subConfig.type === 'lump-sum';
+  const inputLabel = isLumpSum ? '金額を入力' : `${mainConfig.unit}数を入力`;
+  const unitLabel = isLumpSum ? '円' : mainConfig.unit;
+  const displayValue = isLumpSum
+    ? (ss.lumpSum > 0 ? String(ss.lumpSum) : '')
+    : (ss.quantity > 0 ? String(ss.quantity) : '');
 
   kbContainer.innerHTML = `
     <div class="num-keyboard-overlay" data-action="close-keyboard-bg">
       <div class="num-keyboard-panel">
         <div class="flex items-center justify-between mb-3 px-2">
-          <span class="text-sm font-medium text-slate-500">ページ数を入力</span>
+          <span class="text-sm font-medium text-slate-500">${inputLabel}</span>
           <div class="flex items-center gap-2 bg-slate-100 rounded-lg px-3 py-1.5">
-            <span class="text-xl font-bold text-blue-600" id="kb-display">${activePages > 0 ? activePages : ''}</span>
-            <span class="text-xs text-slate-400">頁</span>
+            <span class="text-xl font-bold text-blue-600" id="kb-display">${displayValue}</span>
+            <span class="text-xs text-slate-400">${unitLabel}</span>
           </div>
         </div>
         <div class="grid grid-cols-4 gap-2">
@@ -301,29 +387,35 @@ function renderKeyboard(): void {
   `;
 }
 
-/** Update only the page input display and subtotal without full re-render */
-function updatePageDisplay(): void {
+/** Lightweight update — no full re-render */
+function updateInputDisplay(): void {
   if (!state.activeInputKey) return;
   const [mainKey, subKey] = state.activeInputKey.split(':');
   const ss = state.mainItems[mainKey].subItems[subKey];
+  const subConfig = getSubConfig(mainKey, subKey);
+  const isLumpSum = subConfig.type === 'lump-sum';
 
   // Update keyboard display
   const kbDisplay = document.getElementById('kb-display');
   if (kbDisplay) {
-    kbDisplay.textContent = ss.pages > 0 ? String(ss.pages) : '';
+    kbDisplay.textContent = isLumpSum
+      ? (ss.lumpSum > 0 ? String(ss.lumpSum) : '')
+      : (ss.quantity > 0 ? String(ss.quantity) : '');
   }
 
-  // Update the page input field
-  const pageInput = document.querySelector<HTMLInputElement>(
+  // Update the input field
+  const inputEl = document.querySelector<HTMLInputElement>(
     `input[data-action="open-keyboard"][data-main="${mainKey}"][data-sub="${subKey}"]`
   );
-  if (pageInput) {
-    pageInput.value = ss.pages > 0 ? String(ss.pages) : '';
+  if (inputEl) {
+    inputEl.value = isLumpSum
+      ? (ss.lumpSum > 0 ? String(ss.lumpSum) : '')
+      : (ss.quantity > 0 ? String(ss.quantity) : '');
   }
 
   // Update subtotal display
-  const subtotal = ss.selected && ss.pages > 0 ? calcSubtotal(ss.price, ss.pages) : 0;
-  const subCard = pageInput?.closest('.sub-card');
+  const subtotal = ss.selected ? calcSubtotal(mainKey, subKey) : 0;
+  const subCard = inputEl?.closest('.sub-card');
   if (subCard) {
     const subtotalSpan = subCard.querySelector('.font-semibold.min-w-\\[80px\\]');
     if (subtotalSpan) {
@@ -341,8 +433,6 @@ function updateTotalsDisplay(): void {
   const tax = Math.floor(total * TAX_RATE);
   const totalWithTax = total + tax;
 
-  const totalSection = document.querySelector('.bg-white.rounded-2xl.shadow-sm.border.border-slate-200:last-of-type .space-y-3');
-  // More robust: find by content pattern
   const allSections = document.querySelectorAll('.space-y-3');
   const totalsSection = allSections[allSections.length - 1];
   if (totalsSection && hasAnySelection()) {
@@ -380,9 +470,14 @@ function generateOutputText(): string {
 
     for (const sub of selectedSubs) {
       const ss = ms.subItems[sub.key];
-      const pages = ss.pages > 0 ? ss.pages : 0;
-      const subtotal = calcSubtotal(ss.price, pages);
-      lines.push(`${sub.label}：${ss.price}円 × ${pages}ページ ＝ ${subtotal.toLocaleString('ja-JP')}円`);
+      const subtotal = calcSubtotal(main.key, sub.key);
+
+      if (sub.type === 'lump-sum') {
+        lines.push(`${sub.label}：${ss.lumpSum.toLocaleString('ja-JP')}円`);
+      } else {
+        const qty = ss.quantity > 0 ? ss.quantity : 0;
+        lines.push(`${sub.label}：${ss.price}円 × ${qty}${main.unit} ＝ ${subtotal.toLocaleString('ja-JP')}円`);
+      }
     }
 
     lines.push('');
@@ -475,10 +570,11 @@ function setupEvents(): void {
         state.mainItems[key].selected = !state.mainItems[key].selected;
         if (!state.mainItems[key].selected) {
           for (const subKey of Object.keys(state.mainItems[key].subItems)) {
-            state.mainItems[key].subItems[subKey].selected = false;
-            state.mainItems[key].subItems[subKey].pages = 0;
+            const ss = state.mainItems[key].subItems[subKey];
+            ss.selected = false;
+            ss.quantity = 0;
+            ss.lumpSum = 0;
           }
-          // Close keyboard if the active input belongs to this main item
           if (state.activeInputKey && state.activeInputKey.startsWith(key + ':')) {
             state.activeInputKey = null;
           }
@@ -492,8 +588,8 @@ function setupEvents(): void {
         const ss = state.mainItems[mainKey].subItems[subKey];
         ss.selected = !ss.selected;
         if (!ss.selected) {
-          ss.pages = 0;
-          // Close keyboard if the active input is this sub item
+          ss.quantity = 0;
+          ss.lumpSum = 0;
           if (state.activeInputKey === `${mainKey}:${subKey}`) {
             state.activeInputKey = null;
           }
@@ -527,7 +623,6 @@ function setupEvents(): void {
 
     switch (actionName) {
       case 'close-keyboard-bg': {
-        // Only close if clicking directly on the overlay background, not on panel/keys
         if (target === action) {
           state.activeInputKey = null;
           renderMainContent();
@@ -540,34 +635,60 @@ function setupEvents(): void {
         const val = action.getAttribute('data-val')!;
         const [mainKey, subKey] = state.activeInputKey.split(':');
         const ss = state.mainItems[mainKey].subItems[subKey];
-        const currentStr = ss.pages > 0 ? String(ss.pages) : '';
+        const subConfig = getSubConfig(mainKey, subKey);
+        const isLumpSum = subConfig.type === 'lump-sum';
+
+        const currentField = isLumpSum ? ss.lumpSum : ss.quantity;
+        const currentStr = currentField > 0 ? String(currentField) : '';
         const newStr = currentStr + val;
         const newVal = parseInt(newStr, 10);
-        if (!isNaN(newVal) && newVal <= 99999) {
-          ss.pages = newVal;
+        if (!isNaN(newVal) && newVal <= 9999999) {
+          if (isLumpSum) {
+            ss.lumpSum = newVal;
+          } else {
+            ss.quantity = newVal;
+          }
         }
-        // Lightweight update — no full re-render
-        updatePageDisplay();
+        updateInputDisplay();
         break;
       }
       case 'kb-delete': {
         if (!state.activeInputKey) break;
         const [mainKey, subKey] = state.activeInputKey.split(':');
         const ss = state.mainItems[mainKey].subItems[subKey];
-        const currentStr = String(ss.pages);
+        const subConfig = getSubConfig(mainKey, subKey);
+        const isLumpSum = subConfig.type === 'lump-sum';
+
+        const currentField = isLumpSum ? ss.lumpSum : ss.quantity;
+        const currentStr = String(currentField);
         if (currentStr.length > 1) {
-          ss.pages = parseInt(currentStr.slice(0, -1), 10);
+          const newVal = parseInt(currentStr.slice(0, -1), 10);
+          if (isLumpSum) {
+            ss.lumpSum = newVal;
+          } else {
+            ss.quantity = newVal;
+          }
         } else {
-          ss.pages = 0;
+          if (isLumpSum) {
+            ss.lumpSum = 0;
+          } else {
+            ss.quantity = 0;
+          }
         }
-        updatePageDisplay();
+        updateInputDisplay();
         break;
       }
       case 'kb-clear': {
         if (!state.activeInputKey) break;
         const [mainKey, subKey] = state.activeInputKey.split(':');
-        state.mainItems[mainKey].subItems[subKey].pages = 0;
-        updatePageDisplay();
+        const ss = state.mainItems[mainKey].subItems[subKey];
+        const subConfig = getSubConfig(mainKey, subKey);
+        if (subConfig.type === 'lump-sum') {
+          ss.lumpSum = 0;
+        } else {
+          ss.quantity = 0;
+        }
+        updateInputDisplay();
         break;
       }
       case 'kb-confirm': {
@@ -593,14 +714,14 @@ function setupEvents(): void {
       const mainKey = target.getAttribute('data-main')!;
       const subKey = target.getAttribute('data-sub')!;
       const value = (target as HTMLInputElement).value;
-      const numValue = parseInt(value, 10);
+      const numValue = parseFloat(value);
       if (!isNaN(numValue) && numValue >= 0) {
         state.mainItems[mainKey].subItems[subKey].price = numValue;
       }
     }
   });
 
-  // Also update total on price blur
+  // Update total on price blur
   app.addEventListener('focusout', (e: Event) => {
     const target = e.target as HTMLElement;
     if (target.hasAttribute('data-action') && target.getAttribute('data-action') === 'change-price') {

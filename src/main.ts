@@ -99,7 +99,7 @@ const MAIN_ITEMS: MainItemConfig[] = [
       { key: 'ppt-file', label: 'PPTファイル', defaultPrice: 1.5, type: 'per-unit' },
       { key: 'excel-file', label: 'Excellファイル', defaultPrice: 1.5, type: 'per-unit' },
       { key: 'pdf-file', label: 'PDFファイル', defaultPrice: 1.5, type: 'per-unit' },
-      { key: 'pdf-col', label: 'PDF段組み等', defaultPrice: 0.0, type: 'per-unit' },
+      { key: 'pdf-col', label: '複雑PDF', defaultPrice: 2.0, type: 'per-unit' },
       { key: 'image', label: '画像の部分', defaultPrice: 0, type: 'lump-sum' },
     ],
   },

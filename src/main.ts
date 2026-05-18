@@ -137,7 +137,7 @@ function hasAnySelection(): boolean {
 }
 
 // ─── Render ──────────────────────────────────────────────────────────
-function render(): void {
+function renderMainContent(): void {
   const app = document.getElementById('app');
   if (!app) return;
 
@@ -183,9 +183,10 @@ function render(): void {
               ${main.subItems.map((sub) => {
                 const ss = ms.subItems[sub.key];
                 const subtotal = ss.selected && ss.pages > 0 ? calcSubtotal(ss.price, ss.pages) : 0;
+                const isActive = state.activeInputKey === `${main.key}:${sub.key}`;
                 return `
                   <div class="sub-card rounded-xl border transition-all
-                    ${ss.selected ? 'border-blue-200 bg-blue-50/50' : 'border-slate-100 bg-slate-50/50'}">
+                    ${isActive ? 'border-amber-300 ring-2 ring-amber-100 bg-amber-50/50' : ss.selected ? 'border-blue-200 bg-blue-50/50' : 'border-slate-100 bg-slate-50/50'}">
                     <div class="flex items-center gap-3 px-4 py-3">
                       <input type="checkbox" class="custom-check" data-action="toggle-sub" data-main="${main.key}" data-sub="${sub.key}"
                         ${ss.selected ? 'checked' : ''} />
@@ -245,17 +246,31 @@ function render(): void {
         見積りテキストを出力
       </button>
     </div>
-
-    <!-- Numeric Keyboard -->
-    ${state.activeInputKey ? renderKeyboard() : ''}
   `;
 }
 
-function renderKeyboard(): string {
-  return `
-    <div class="num-keyboard-overlay" data-action="close-keyboard">
-      <div class="num-keyboard-panel" onclick="event.stopPropagation()">
-        <div class="text-center text-sm font-medium text-slate-500 mb-2">ページ数を入力</div>
+function renderKeyboard(): void {
+  const kbContainer = document.getElementById('kb-container');
+  if (!kbContainer) return;
+
+  if (!state.activeInputKey) {
+    kbContainer.innerHTML = '';
+    return;
+  }
+
+  const [activeMain, activeSub] = state.activeInputKey.split(':');
+  const activePages = state.mainItems[activeMain]?.subItems[activeSub]?.pages ?? 0;
+
+  kbContainer.innerHTML = `
+    <div class="num-keyboard-overlay" data-action="close-keyboard-bg">
+      <div class="num-keyboard-panel">
+        <div class="flex items-center justify-between mb-3 px-2">
+          <span class="text-sm font-medium text-slate-500">ページ数を入力</span>
+          <div class="flex items-center gap-2 bg-slate-100 rounded-lg px-3 py-1.5">
+            <span class="text-xl font-bold text-blue-600" id="kb-display">${activePages > 0 ? activePages : ''}</span>
+            <span class="text-xs text-slate-400">頁</span>
+          </div>
+        </div>
         <div class="grid grid-cols-4 gap-2">
           <div class="kb-key" data-action="kb-input" data-val="7">7</div>
           <div class="kb-key" data-action="kb-input" data-val="8">8</div>
@@ -275,6 +290,65 @@ function renderKeyboard(): string {
       </div>
     </div>
   `;
+}
+
+/** Update only the page input display and subtotal without full re-render */
+function updatePageDisplay(): void {
+  if (!state.activeInputKey) return;
+  const [mainKey, subKey] = state.activeInputKey.split(':');
+  const ss = state.mainItems[mainKey].subItems[subKey];
+
+  // Update keyboard display
+  const kbDisplay = document.getElementById('kb-display');
+  if (kbDisplay) {
+    kbDisplay.textContent = ss.pages > 0 ? String(ss.pages) : '';
+  }
+
+  // Update the page input field
+  const pageInput = document.querySelector<HTMLInputElement>(
+    `input[data-action="open-keyboard"][data-main="${mainKey}"][data-sub="${subKey}"]`
+  );
+  if (pageInput) {
+    pageInput.value = ss.pages > 0 ? String(ss.pages) : '';
+  }
+
+  // Update subtotal display
+  const subtotal = ss.selected && ss.pages > 0 ? calcSubtotal(ss.price, ss.pages) : 0;
+  const subCard = pageInput?.closest('.sub-card');
+  if (subCard) {
+    const subtotalSpan = subCard.querySelector('.font-semibold.min-w-\\[80px\\]');
+    if (subtotalSpan) {
+      subtotalSpan.textContent = subtotal > 0 ? formatPrice(subtotal) : '−';
+      subtotalSpan.className = `text-sm font-semibold min-w-[80px] text-right ${subtotal > 0 ? 'text-blue-600' : 'text-slate-300'}`;
+    }
+  }
+
+  // Update totals
+  updateTotalsDisplay();
+}
+
+function updateTotalsDisplay(): void {
+  const total = calcTotal();
+  const tax = Math.floor(total * TAX_RATE);
+  const totalWithTax = total + tax;
+
+  const totalSection = document.querySelector('.bg-white.rounded-2xl.shadow-sm.border.border-slate-200:last-of-type .space-y-3');
+  // More robust: find by content pattern
+  const allSections = document.querySelectorAll('.space-y-3');
+  const totalsSection = allSections[allSections.length - 1];
+  if (totalsSection && hasAnySelection()) {
+    const rows = totalsSection.querySelectorAll('.flex.justify-between');
+    if (rows.length >= 3) {
+      rows[0].querySelector('span:last-child')!.textContent = formatPrice(total);
+      rows[1].querySelector('span:last-child')!.textContent = formatPrice(tax);
+      rows[2].querySelector('span:last-child')!.textContent = formatPrice(totalWithTax);
+    }
+  }
+}
+
+function render(): void {
+  renderMainContent();
+  renderKeyboard();
 }
 
 // ─── Output Text Generation ─────────────────────────────────────────
@@ -353,7 +427,11 @@ function escapeHtml(text: string): string {
 
 // ─── Event Handling ──────────────────────────────────────────────────
 function setupEvents(): void {
-  document.getElementById('app')!.addEventListener('click', (e: MouseEvent) => {
+  const app = document.getElementById('app')!;
+  const kbContainer = document.getElementById('kb-container')!;
+
+  // Main app click handler
+  app.addEventListener('click', (e: MouseEvent) => {
     const target = e.target as HTMLElement;
     const action = target.closest('[data-action]') as HTMLElement | null;
     if (!action) return;
@@ -364,11 +442,14 @@ function setupEvents(): void {
       case 'toggle-main': {
         const key = action.getAttribute('data-key')!;
         state.mainItems[key].selected = !state.mainItems[key].selected;
-        // Uncheck all sub-items when main is unchecked
         if (!state.mainItems[key].selected) {
           for (const subKey of Object.keys(state.mainItems[key].subItems)) {
             state.mainItems[key].subItems[subKey].selected = false;
             state.mainItems[key].subItems[subKey].pages = 0;
+          }
+          // Close keyboard if the active input belongs to this main item
+          if (state.activeInputKey && state.activeInputKey.startsWith(key + ':')) {
+            state.activeInputKey = null;
           }
         }
         render();
@@ -381,6 +462,10 @@ function setupEvents(): void {
         ss.selected = !ss.selected;
         if (!ss.selected) {
           ss.pages = 0;
+          // Close keyboard if the active input is this sub item
+          if (state.activeInputKey === `${mainKey}:${subKey}`) {
+            state.activeInputKey = null;
+          }
         }
         render();
         break;
@@ -392,9 +477,31 @@ function setupEvents(): void {
         render();
         break;
       }
-      case 'close-keyboard': {
-        state.activeInputKey = null;
-        render();
+      case 'generate-output': {
+        if (!hasAnySelection()) break;
+        const text = generateOutputText();
+        showOutputModal(text);
+        break;
+      }
+    }
+  });
+
+  // Keyboard container click handler (separate from app)
+  kbContainer.addEventListener('click', (e: MouseEvent) => {
+    const target = e.target as HTMLElement;
+    const action = target.closest('[data-action]') as HTMLElement | null;
+    if (!action) return;
+
+    const actionName = action.getAttribute('data-action');
+
+    switch (actionName) {
+      case 'close-keyboard-bg': {
+        // Only close if clicking directly on the overlay background, not on panel/keys
+        if (target === action) {
+          state.activeInputKey = null;
+          renderMainContent();
+          renderKeyboard();
+        }
         break;
       }
       case 'kb-input': {
@@ -408,7 +515,8 @@ function setupEvents(): void {
         if (!isNaN(newVal) && newVal <= 99999) {
           ss.pages = newVal;
         }
-        render();
+        // Lightweight update — no full re-render
+        updatePageDisplay();
         break;
       }
       case 'kb-delete': {
@@ -421,52 +529,27 @@ function setupEvents(): void {
         } else {
           ss.pages = 0;
         }
-        render();
+        updatePageDisplay();
         break;
       }
       case 'kb-clear': {
         if (!state.activeInputKey) break;
         const [mainKey, subKey] = state.activeInputKey.split(':');
         state.mainItems[mainKey].subItems[subKey].pages = 0;
-        render();
+        updatePageDisplay();
         break;
       }
       case 'kb-confirm': {
         state.activeInputKey = null;
-        render();
-        break;
-      }
-      case 'generate-output': {
-        if (!hasAnySelection()) break;
-        const text = generateOutputText();
-        showOutputModal(text);
-        break;
-      }
-      case 'copy-output': {
-        const overlay = action.closest('.output-overlay') as HTMLElement;
-        const text = overlay.getAttribute('data-output-text') || '';
-        navigator.clipboard.writeText(text).then(() => {
-          const btn = action;
-          const origText = btn.textContent;
-          btn.textContent = 'コピーしました！';
-          btn.classList.add('text-green-600');
-          setTimeout(() => {
-            btn.textContent = origText;
-            btn.classList.remove('text-green-600');
-          }, 1500);
-        });
-        break;
-      }
-      case 'close-output': {
-        const overlay = action.closest('.output-overlay') as HTMLElement;
-        overlay.remove();
+        renderMainContent();
+        renderKeyboard();
         break;
       }
     }
   });
 
   // Handle price input changes
-  document.getElementById('app')!.addEventListener('input', (e: Event) => {
+  app.addEventListener('input', (e: Event) => {
     const target = e.target as HTMLElement;
     if (!target.hasAttribute('data-action') || target.getAttribute('data-action') !== 'change-price') return;
 
@@ -480,10 +563,10 @@ function setupEvents(): void {
   });
 
   // Also update total on price blur
-  document.getElementById('app')!.addEventListener('focusout', (e: Event) => {
+  app.addEventListener('focusout', (e: Event) => {
     const target = e.target as HTMLElement;
     if (target.hasAttribute('data-action') && target.getAttribute('data-action') === 'change-price') {
-      render();
+      updateTotalsDisplay();
     }
   });
 }

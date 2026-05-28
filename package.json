@@ -4,11 +4,14 @@
   "description": "Vanilla TypeScript application with Express + Vite (HTML + CSS + TS + Node API)",
   "scripts": {
     "build": "bash ./scripts/build.sh",
+    "build:local": "vite build && tsup server/server.ts --format cjs --platform node --target node20 --outDir dist-server --no-splitting --no-minify --external vite",
     "dev": "bash ./scripts/dev.sh",
+    "dev:local": "tsx watch server/server.ts",
+    "start": "bash ./scripts/start.sh",
+    "start:local": "node dist-server/server.js",
     "preinstall": "npx only-allow pnpm",
     "lint": "eslint",
     "lint:build": "eslint . --quiet",
-    "start": "bash ./scripts/start.sh",
     "ts-check": "tsc -p tsconfig.json",
     "validate": "pnpm run --parallel '/^(ts-check|lint:build)$/'"
   },
